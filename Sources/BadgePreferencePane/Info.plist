@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Tahoe Update Badge Blocker</string>
+    <key>CFBundleExecutable</key>
+    <string>BadgePreferencePane</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.cagatay.BadgePreferencePane</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>Tahoe Update Badge Blocker</string>
+    <key>CFBundlePackageType</key>
+    <string>BNDL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.1</string>
+    <key>CFBundleVersion</key>
+    <string>2</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>NSPrincipalClass</key>
+    <string>BadgePreferencePane</string>
+    <key>NSPrefPaneIconFile</key>
+    <string>BadgeIcon.icns</string>
+    <key>NSPrefPaneIconLabel</key>
+    <string>Tahoe Update Badge Blocker</string>
+</dict>
+</plist>

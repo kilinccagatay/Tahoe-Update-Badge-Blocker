@@ -1,0 +1,14 @@
+"badge_title" = "Tahoe Update Badge Blocker";
+"badge_description" = "Yalnızca macOS Tahoe 26 yükseltmesi varsa Sistem Ayarları'nın kırmızı Dock rozetini engeller. Sequoia 15.x, Safari, güvenlik, iCloud ve Apple Hesabı rozetleri etkin kalır.";
+"toggle_label" = "Tahoe güncelleme rozetini engelle";
+"status_enabled" = "Etkin";
+"status_disabled" = "Kapalı";
+"applying_change" = "Rozet ayarı uygulanıyor…";
+"apply_failed" = "Rozet ayarı uygulanamadı. Yeniden deneyin.";
+"uninstall_button" = "Kaldır…";
+"uninstall_title" = "Tahoe Update Badge Blocker kaldırılsın mı?";
+"uninstall_message" = "Ayar paneli ve arka plan yardımcısı kaldırılır, ardından doğal rozet davranışı geri yüklenir.";
+"uninstall_confirm" = "Kaldır";
+"cancel" = "İptal";
+"uninstalling" = "Kaldırılıyor…";
+"uninstall_failed" = "Kaldırma işlemi başlatılamadı";
