@@ -50,7 +50,7 @@ package: all
 		--identifier com.kilinccagatay.TahoeUpdateBadgeBlocker \
 		--version "$(VERSION)" --install-location / \
 		"$(OUTPUT_DIR)/$(PACKAGE_NAME)"
-	shasum -a 256 "$(OUTPUT_DIR)/$(PACKAGE_NAME)" > "$(OUTPUT_DIR)/$(PACKAGE_NAME).sha256"
+	cd "$(OUTPUT_DIR)" && shasum -a 256 "$(PACKAGE_NAME)" > "$(PACKAGE_NAME).sha256"
 
 test:
 	./Tests/classify-updates.zsh
