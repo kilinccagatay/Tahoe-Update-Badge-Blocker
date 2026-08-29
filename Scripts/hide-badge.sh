@@ -6,10 +6,11 @@ force_refresh=0
 [[ "${1:-}" == "--force-refresh" ]] && force_refresh=1
 
 settings_domain="com.cagatay.BadgeHider"
-system_settings_domain="com.apple.systempreferences"
+system_settings_domain="$HOME/Library/Preferences/com.apple.systempreferences.plist"
 attention_key="AttentionPrefBundleIDs"
 software_update_id="com.apple.Software-Update-Settings.extension"
 scan_interval=300
+scan_timeout="${TAHOE_BADGE_SCAN_TIMEOUT:-45}"
 preference_tool="${0:A:h}/badge-preference-tool"
 
 enabled="$(defaults read "$settings_domain" Enabled 2>/dev/null || printf '1')"
@@ -37,6 +38,34 @@ set_badge_value() {
     fi
 }
 
+list_cached_updates() {
+    local output_file
+    local update_pid
+    local elapsed=0
+    local exit_status=0
+
+    output_file="$(mktemp "${TMPDIR:-/tmp}/TahoeUpdateBadgeBlocker.XXXXXX")" || return 1
+    softwareupdate --list --no-scan >"$output_file" 2>&1 &
+    update_pid=$!
+
+    while kill -0 "$update_pid" 2>/dev/null && [[ "$elapsed" -lt "$scan_timeout" ]]; do
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    if kill -0 "$update_pid" 2>/dev/null; then
+        kill "$update_pid" 2>/dev/null || true
+        wait "$update_pid" 2>/dev/null || true
+        exit_status=124
+    else
+        wait "$update_pid" || exit_status=$?
+    fi
+
+    cat "$output_file"
+    rm -f "$output_file"
+    return "$exit_status"
+}
+
 if [[ "$enabled" == "0" ]]; then
     set_badge_value 1
     defaults write "$settings_domain" LastAppliedEnabled -int 0
@@ -50,7 +79,7 @@ if [[ "$force_refresh" != "1" && "$((now - last_scan))" -lt "$scan_interval" ]];
 fi
 defaults write "$settings_domain" LastScanEpoch -int "$now"
 
-update_output="$(softwareupdate --list --no-scan 2>&1)"
+update_output="$(list_cached_updates)"
 classification="$(classify_update_output "$update_output")"
 
 case "$classification" in

@@ -2,6 +2,7 @@
 "badge_description" = "Blocks the red System Settings Dock badge when macOS Tahoe 26 is the only available upgrade. Sequoia 15.x, Safari, security, iCloud, and Apple Account badges remain enabled.";
 "toggle_label" = "Block the Tahoe update badge";
 "status_enabled" = "Enabled";
+"status_enabled_other_badges" = "Enabled · %lu other alert";
 "status_disabled" = "Off";
 "applying_change" = "Applying badge setting…";
 "apply_failed" = "The badge setting could not be applied. Try again.";

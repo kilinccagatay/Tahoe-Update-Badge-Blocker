@@ -1,7 +1,7 @@
 PREFPANE_NAME := BadgePreferencePane.prefPane
 BUILD_DIR := build
 ARCHS := -arch arm64 -arch x86_64
-VERSION := 1.1.0
+VERSION := 1.1.1
 PACKAGE_NAME := Tahoe-Update-Badge-Blocker-$(VERSION).pkg
 PACKAGE_SCRIPTS := $(BUILD_DIR)/package-scripts
 OUTPUT_DIR := outputs

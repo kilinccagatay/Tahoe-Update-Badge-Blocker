@@ -29,7 +29,7 @@ If the available update list cannot be classified safely, the blocker leaves the
 
 ## Install
 
-1. Download `Tahoe-Update-Badge-Blocker-1.1.0.pkg` from the latest GitHub Release.
+1. Download `Tahoe-Update-Badge-Blocker-1.1.1.pkg` from the latest GitHub Release.
 2. Open the package and complete the standard macOS Installer steps.
 3. Open **System Settings → Tahoe Update Badge Blocker**.
 4. Turn on **Block the Tahoe update badge**. The Dock tile refreshes immediately without restarting the Dock or requiring logout.
@@ -64,6 +64,18 @@ It modifies only the current user's System Settings preferences. It does not pat
 - Apple does not provide a public API for selectively suppressing this badge. A future macOS update may change the underlying preference or `softwareupdate` output and require an update to this project.
 - This project is independent of Apple and OpenCore Legacy Patcher.
 
+## If a badge still remains
+
+Tahoe Update Badge Blocker suppresses only the Software Update attention entry. A remaining number can belong to iCloud, Apple Account, Family, or a “Finish Setting Up” follow-up, which the app intentionally preserves.
+
+To inspect the current sources without changing them:
+
+```sh
+defaults read "$HOME/Library/Preferences/com.apple.systempreferences.plist" AttentionPrefBundleIDs
+```
+
+With Tahoe filtering active, `com.apple.Software-Update-Settings.extension` should be `0`. Any other entry with value `1` explains a legitimate remaining System Settings badge.
+
 ## Privacy
 
 Everything runs locally. There is no analytics, telemetry, account, network service, or update server in this project.
@@ -82,7 +94,7 @@ make package
 
 ## Türkçe
 
-Bu araç, yalnızca macOS Tahoe 26 yükseltmesi bulunduğunda Sistem Ayarları rozetini gizler. Sequoia 15.x, Safari, güvenlik, iCloud ve Apple Hesabı uyarıları görünmeye devam eder. Tahoe yükseltmesini engellemez veya gizlemez; sadece bu yükseltmenin oluşturduğu kırmızı rozeti kaldırır. Anahtar değişiklikleri Dock yeniden başlatılmadan ve oturum kapatılmadan anında uygulanır.
+Bu araç, yalnızca macOS Tahoe 26 yükseltmesi bulunduğunda Sistem Ayarları rozetini gizler. Sequoia 15.x, Safari, güvenlik, iCloud ve Apple Hesabı uyarıları görünmeye devam eder. Tahoe yükseltmesini engellemez veya gizlemez; sadece bu yükseltmenin oluşturduğu kırmızı rozeti kaldırır. Anahtar değişiklikleri Dock yeniden başlatılmadan ve oturum kapatılmadan anında uygulanır. Dock'ta sayı kalırsa paneldeki “başka uyarı” bilgisi bunun Tahoe dışındaki bir Apple Account, iCloud veya sistem takip uyarısı olduğunu belirtir.
 
 ## License
 

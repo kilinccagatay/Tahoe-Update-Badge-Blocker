@@ -1,10 +1,19 @@
 #import <Foundation/Foundation.h>
 
-static NSString * const SystemSettingsDomain = @"com.apple.systempreferences";
 static NSString * const AttentionKey = @"AttentionPrefBundleIDs";
 static NSString * const SoftwareUpdateID = @"com.apple.Software-Update-Settings.extension";
 static NSNotificationName const RefreshDockTileNotification =
     @"com.apple.systempreferences.refreshdocktile";
+
+static NSString *systemSettingsPreferencesPath(void) {
+    return [NSHomeDirectory() stringByAppendingPathComponent:
+        @"Library/Preferences/com.apple.systempreferences.plist"];
+}
+
+static NSString *systemSettingsContainerPreferencesPath(void) {
+    return [NSHomeDirectory() stringByAppendingPathComponent:
+        @"Library/Containers/com.apple.systempreferences/Data/Library/Preferences/com.apple.systempreferences.plist"];
+}
 
 static void refreshDockTile(void) {
     [[NSDistributedNotificationCenter defaultCenter]
@@ -14,10 +23,10 @@ static void refreshDockTile(void) {
           deliverImmediately:YES];
 }
 
-static BOOL deleteAttentionPreference(void) {
+static BOOL deleteAttentionPreference(NSString *preferencesPath) {
     NSTask *task = [[NSTask alloc] init];
     task.executableURL = [NSURL fileURLWithPath:@"/usr/bin/defaults"];
-    task.arguments = @[@"delete", SystemSettingsDomain, AttentionKey];
+    task.arguments = @[@"delete", preferencesPath, AttentionKey];
     task.standardOutput = [NSFileHandle fileHandleForWritingAtPath:@"/dev/null"];
     task.standardError = [NSFileHandle fileHandleForWritingAtPath:@"/dev/null"];
 
@@ -30,11 +39,11 @@ static BOOL deleteAttentionPreference(void) {
     }
 }
 
-static NSData *exportPreferences(void) {
+static NSData *exportPreferences(NSString *preferencesPath) {
     NSTask *task = [[NSTask alloc] init];
     NSPipe *output = [NSPipe pipe];
     task.executableURL = [NSURL fileURLWithPath:@"/usr/bin/defaults"];
-    task.arguments = @[@"export", SystemSettingsDomain, @"-"];
+    task.arguments = @[@"export", preferencesPath, @"-"];
     task.standardOutput = output;
     task.standardError = [NSFileHandle fileHandleForWritingAtPath:@"/dev/null"];
 
@@ -51,7 +60,7 @@ static NSData *exportPreferences(void) {
     return [output.fileHandleForReading readDataToEndOfFile];
 }
 
-static BOOL importPreferences(NSDictionary *preferences) {
+static BOOL importPreferences(NSDictionary *preferences, NSString *preferencesPath) {
     NSError *error = nil;
     NSData *data = [NSPropertyListSerialization
         dataWithPropertyList:preferences
@@ -71,7 +80,7 @@ static BOOL importPreferences(NSDictionary *preferences) {
 
     NSTask *task = [[NSTask alloc] init];
     task.executableURL = [NSURL fileURLWithPath:@"/usr/bin/defaults"];
-    task.arguments = @[@"import", SystemSettingsDomain, temporaryURL.path];
+    task.arguments = @[@"import", preferencesPath, temporaryURL.path];
     task.standardOutput = [NSFileHandle fileHandleForWritingAtPath:@"/dev/null"];
     task.standardError = [NSFileHandle fileHandleForWritingAtPath:@"/dev/null"];
 
@@ -88,6 +97,49 @@ static BOOL importPreferences(NSDictionary *preferences) {
     return succeeded;
 }
 
+static BOOL updatePreferences(NSString *action, NSString *preferencesPath) {
+    NSData *exportedData = exportPreferences(preferencesPath);
+    NSMutableDictionary *preferences = nil;
+
+    if (exportedData) {
+        NSError *error = nil;
+        preferences = [[NSPropertyListSerialization
+            propertyListWithData:exportedData
+                         options:NSPropertyListMutableContainersAndLeaves
+                          format:nil
+                           error:&error] mutableCopy];
+        if (!preferences || error) {
+            return NO;
+        }
+    } else if ([action isEqualToString:@"hide"]) {
+        preferences = [[NSMutableDictionary alloc] init];
+    } else {
+        return YES;
+    }
+
+    id storedAttention = preferences[AttentionKey];
+    NSMutableDictionary *attention = [storedAttention isKindOfClass:NSDictionary.class]
+        ? [storedAttention mutableCopy]
+        : [[NSMutableDictionary alloc] init];
+
+    if ([action isEqualToString:@"hide"]) {
+        attention[SoftwareUpdateID] = @0;
+        preferences[AttentionKey] = attention;
+        return importPreferences(preferences, preferencesPath);
+    }
+
+    [attention removeObjectForKey:SoftwareUpdateID];
+    if (storedAttention != nil && !deleteAttentionPreference(preferencesPath)) {
+        return NO;
+    }
+    if (attention.count == 0) {
+        return YES;
+    }
+
+    preferences[AttentionKey] = attention;
+    return importPreferences(preferences, preferencesPath);
+}
+
 int main(int argc, const char *argv[]) {
     @autoreleasepool {
         if (argc != 2) {
@@ -100,48 +152,21 @@ int main(int argc, const char *argv[]) {
             return 0;
         }
 
-        NSData *exportedData = exportPreferences();
-        if (!exportedData) {
-            return 1;
-        }
-
-        NSError *error = nil;
-        NSMutableDictionary *preferences = [[NSPropertyListSerialization
-            propertyListWithData:exportedData
-                         options:NSPropertyListMutableContainersAndLeaves
-                          format:nil
-                           error:&error] mutableCopy];
-        if (!preferences || error) {
-            return 1;
-        }
-
-        id storedAttention = preferences[AttentionKey];
-        NSMutableDictionary *attention = [storedAttention isKindOfClass:NSDictionary.class]
-            ? [storedAttention mutableCopy]
-            : [[NSMutableDictionary alloc] init];
-
-        if ([action isEqualToString:@"hide"]) {
-            attention[SoftwareUpdateID] = @0;
-            preferences[AttentionKey] = attention;
-        } else if ([action isEqualToString:@"restore"]) {
-            [attention removeObjectForKey:SoftwareUpdateID];
-            BOOL hadAttentionPreference = storedAttention != nil;
-            if (hadAttentionPreference && !deleteAttentionPreference()) {
-                return 1;
-            }
-            if (attention.count == 0) {
-                refreshDockTile();
-                return 0;
-            } else {
-                preferences[AttentionKey] = attention;
-            }
-        } else {
+        if (![action isEqualToString:@"hide"] &&
+            ![action isEqualToString:@"restore"]) {
             return 64;
         }
 
-        if (!importPreferences(preferences)) {
-            return 1;
+        NSArray<NSString *> *preferencePaths = @[
+            systemSettingsPreferencesPath(),
+            systemSettingsContainerPreferencesPath()
+        ];
+        for (NSString *preferencesPath in preferencePaths) {
+            if (!updatePreferences(action, preferencesPath)) {
+                return 1;
+            }
         }
+
         refreshDockTile();
         return 0;
     }

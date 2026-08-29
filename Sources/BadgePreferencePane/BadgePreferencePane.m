@@ -2,6 +2,8 @@
 #import <PreferencePanes/PreferencePanes.h>
 
 static NSString * const SettingsDomain = @"com.cagatay.BadgeHider";
+static NSString * const SoftwareUpdateAttentionID =
+    @"com.apple.Software-Update-Settings.extension";
 
 @interface BadgePreferencePane : NSPreferencePane
 @property (nonatomic, strong) NSSwitch *enabledSwitch;
@@ -112,6 +114,27 @@ static NSString * const SettingsDomain = @"com.cagatay.BadgeHider";
     [self refreshState];
 }
 
+- (NSUInteger)otherBadgeCount {
+    NSString *preferencesPath = [NSHomeDirectory() stringByAppendingPathComponent:
+        @"Library/Preferences/com.apple.systempreferences.plist"];
+    NSDictionary *preferences = [NSDictionary dictionaryWithContentsOfFile:preferencesPath];
+    NSDictionary *attention = [preferences[@"AttentionPrefBundleIDs"]
+        isKindOfClass:NSDictionary.class]
+        ? preferences[@"AttentionPrefBundleIDs"]
+        : nil;
+
+    NSUInteger count = 0;
+    for (NSString *identifier in attention) {
+        if (![identifier isEqualToString:SoftwareUpdateAttentionID]) {
+            id value = attention[identifier];
+            if ([value respondsToSelector:@selector(unsignedIntegerValue)]) {
+                count += [value unsignedIntegerValue];
+            }
+        }
+    }
+    return count;
+}
+
 - (void)refreshState {
     NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:SettingsDomain];
     if ([defaults objectForKey:@"Enabled"] == nil) {
@@ -119,9 +142,18 @@ static NSString * const SettingsDomain = @"com.cagatay.BadgeHider";
     }
     BOOL enabled = [defaults boolForKey:@"Enabled"];
     self.enabledSwitch.state = enabled ? NSControlStateValueOn : NSControlStateValueOff;
-    self.statusLabel.stringValue = enabled
-        ? [self text:@"status_enabled" fallback:@"Enabled"]
-        : [self text:@"status_disabled" fallback:@"Off"];
+    NSUInteger otherBadgeCount = [self otherBadgeCount];
+    if (enabled && otherBadgeCount > 0) {
+        NSString *format = [self
+            text:@"status_enabled_other_badges"
+            fallback:@"Enabled · %lu other alert"];
+        self.statusLabel.stringValue = [NSString
+            stringWithFormat:format, (unsigned long)otherBadgeCount];
+    } else {
+        self.statusLabel.stringValue = enabled
+            ? [self text:@"status_enabled" fallback:@"Enabled"]
+            : [self text:@"status_disabled" fallback:@"Off"];
+    }
     self.changeHint.hidden = YES;
 }
 
@@ -191,7 +223,7 @@ static NSString * const SettingsDomain = @"com.cagatay.BadgeHider";
     task.terminationHandler = ^(NSTask *completedTask) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (completedTask.terminationStatus == 0) {
-                weakSelf.changeHint.hidden = YES;
+                [weakSelf refreshState];
             } else {
                 weakSelf.changeHint.stringValue = [weakSelf
                     text:@"apply_failed"
